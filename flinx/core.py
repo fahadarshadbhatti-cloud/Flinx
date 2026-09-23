@@ -173,8 +173,11 @@ class FlinxCore(QObject):
 
             self.transcription_completed.emit(text)
 
-            # Show pasting status in pill HUD
+            # Dismiss HUD before injecting text so the Wayland compositor
+            # returns 100% active focus to the user's target editor/cursor.
             self._set_state(State.PASTING, "Pasting...")
+            time.sleep(0.12)  # Settle delay for compositor surface unmap and focus return
+
             print("[flinx] Injecting via clipboard...", flush=True)
 
             try:
@@ -185,8 +188,7 @@ class FlinxCore(QObject):
                 time.sleep(2.0)
                 return
 
-            self._set_state(State.PASTING, "Pasted!")
-            time.sleep(0.9)
+            self._set_state(State.IDLE, "")
 
         finally:
             # Clean up temporary audio file

@@ -533,9 +533,7 @@ class FlinxPill(QWidget):
             self.show_pill()
 
         elif state == State.PASTING:
-            self.capsule.set_state(State.PASTING, message or "Pasting...")
-            self.show_pill()
-            self.hide_timer.start(1400)
+            self.hide_pill()
 
         elif state == State.ERROR:
             self.capsule.set_state(State.ERROR, message or "Error")
