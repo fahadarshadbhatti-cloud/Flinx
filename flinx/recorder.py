@@ -1,5 +1,5 @@
 """
-lowen/recorder.py — Microphone capture using sounddevice
+flinx/recorder.py — Microphone capture using sounddevice
 
 Records audio into a numpy buffer while the hotkey is held,
 then writes a WAV file to disk when stopped.
@@ -22,7 +22,7 @@ import numpy as np
 import sounddevice as sd
 import scipy.io.wavfile as wavfile
 
-from lowen import config
+from flinx import config
 
 
 class Recorder:

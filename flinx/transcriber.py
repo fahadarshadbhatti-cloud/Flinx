@@ -1,5 +1,5 @@
 """
-lowen/transcriber.py — Groq Whisper transcription
+flinx/transcriber.py — Groq Whisper transcription
 
 Sends a WAV file to Groq's Whisper v3 Turbo API and returns
 the transcribed text string.
@@ -19,7 +19,7 @@ import re
 
 from groq import Groq, APIError
 
-from lowen import config
+from flinx import config
 
 _client: Groq | None = None
 
@@ -100,7 +100,7 @@ def transcribe(wav_path: str) -> str:
     if not config.GROQ_API_KEY:
         raise ValueError(
             "GROQ_API_KEY is not configured. "
-            "Add it to ~/.config/lowen/.env"
+            "Add it to ~/.config/flinx/.env"
         )
 
     path = Path(wav_path)
@@ -144,7 +144,7 @@ def transcribe(wav_path: str) -> str:
             if llm_text:
                 return llm_text.strip()
         except Exception as e:
-            print(f"[lowen] Warning: LLM cleaning failed: {e}. Falling back to raw transcript.", flush=True)
+            print(f"[flinx] Warning: LLM cleaning failed: {e}. Falling back to raw transcript.", flush=True)
 
     return cleaned
 

@@ -1,7 +1,7 @@
 """
-lowen/hotkey.py — Global Wayland-safe hotkey listener using evdev.
+flinx/hotkey.py — Global Wayland-safe hotkey listener using evdev.
 
-Supports single keys (KEY_RIGHTALT) and combos (KEY_LEFTALT+KEY_RIGHTALT).
+Supports single keys (KEY_RIGHTALT) and combos (KEY_LEFTSHIFT+KEY_RIGHTSHIFT).
 Combos fire when ALL specified keys are held simultaneously.
 Runs in a background thread; never grabs the device so typing is unaffected.
 """
@@ -15,7 +15,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 import evdev
 from evdev import ecodes
 
-from lowen import config
+from flinx import config
 
 
 class HotkeyListener(QThread):

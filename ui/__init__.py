@@ -1,3 +1,3 @@
 """
-ui package — PyQt6 UI components for Lowen
+ui package — PyQt6 UI components for Flinx
 """

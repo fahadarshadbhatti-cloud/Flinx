@@ -1,7 +1,7 @@
-# Lowen 🎙️
+# Flinx 🎙️⚡
 
 <p align="center">
-  <img src="resources/icon.svg" width="96" height="96" alt="Lowen Logo" />
+  <img src="resources/icon.svg" width="96" height="96" alt="Flinx Logo" />
 </p>
 
 <p align="center">
@@ -20,15 +20,15 @@
 
 ## ⚡ The Story & Engineering Challenge
 
-Modern tools like *Wispr Flow* and *Superwhisper* made fast voice-to-text dictation an essential part of developer productivity on macOS and Windows. However, switching to Linux on Wayland revealed a massive ecosystem void: **virtually none of these tools existed or worked natively on Wayland**.
+Modern tools like *Wispr Flow* and *Superwhisper* made fast voice-to-text dictation an indispensable superpower on macOS and Windows. However, switching to Linux on Wayland revealed a massive ecosystem void: **virtually none of these tools existed or worked natively on Wayland**.
 
 ### Why Voice Dictation is Hard on Wayland
 1. **Strict Input Isolation:** Unlike X11, Wayland's security architecture intentionally prevents background applications from intercepting global keystrokes or snooping on keystrokes in other windows.
 2. **Focus-Stealing Windows:** Displaying a visual HUD or floating recording pill often causes compositors (like KWin or Mutter) to de-focus the currently active editor, breaking instant text injection.
 3. **Synthetic Input Protocols:** Different compositors implement divergent text injection protocols (`zwp_virtual_keyboard_v1`, `zwp_text_input_v3`, or kernel `/dev/uinput`).
 
-### How Lowen Solves This
-Lowen bypasses these barriers through a layered Linux-native architecture:
+### How Flinx Solves This
+Flinx (**F**ahad + **Fl**ow + L**inux**) bypasses these barriers through a layered Linux-native architecture:
 - **Passive Kernel Input:** Reads raw kernel keyboard events via `evdev` without grabbing exclusive device locks—enabling instant dual-key combos (like `Left Shift + Right Shift`) without interfering with regular typing.
 - **Sub-400ms Transcription:** Streams 16kHz mono audio directly to Groq's LPU-accelerated **Whisper Large v3 Turbo** API.
 - **Universal Wayland Text Injection:** Uses kernel-level `/dev/uinput` simulation via `ydotool` paired with Wayland clipboards (`wl-copy`), with automatic fallback for `wtype` on wlroots compositors.
@@ -36,7 +36,7 @@ Lowen bypasses these barriers through a layered Linux-native architecture:
 
 ```mermaid
 flowchart LR
-    A[Hold Dual Shift / Alt] -->|evdev kernel stream| B[Lowen Hotkey Engine]
+    A[Hold Dual Shift / Alt] -->|evdev kernel stream| B[Flinx Hotkey Engine]
     B -->|Start Mic Capture| C[sounddevice & NumPy Buffer]
     C -->|Real-time RMS| D[Glassmorphic Waveform Pill]
     A -->|Release Hotkey| E[Groq Whisper Turbo API]
@@ -62,7 +62,7 @@ flowchart LR
 
 | Transcription Engine | Model Size | Avg. Latency | Accuracy |
 |---|---|---|---|
-| **Lowen (Groq Whisper Turbo)** | **Large v3 Turbo** | **~350 ms** | **State of the Art** |
+| **Flinx (Groq Whisper Turbo)** | **Large v3 Turbo** | **~350 ms** | **State of the Art** |
 | Local whisper.cpp (CPU) | Small / Medium | ~1,800 ms | Good |
 | Standard Cloud APIs | Base / Small | ~1,200 ms | Moderate |
 
@@ -72,8 +72,8 @@ flowchart LR
 
 ### 1. Clone & Run Setup
 ```bash
-git clone https://github.com/fahadarshad/lowen.git ~/Lowen
-cd ~/Lowen
+git clone https://github.com/fahadarshad/flinx.git ~/flinx
+cd ~/flinx
 bash install.sh
 ```
 *You can pass your Groq API key directly: `bash install.sh --api-key gsk_xxxx`.*
@@ -86,30 +86,30 @@ bash install.sh
 
 ## 🎮 Usage & Commands
 
-Once installed, Lowen is accessible via the `lowen` command anywhere in your terminal or from your desktop application launcher:
+Once installed, Flinx is accessible via the `flinx` command anywhere in your terminal or from your desktop application launcher:
 
 | Command | Action |
 |---|---|
-| `lowen --check` | Verify system dependencies, kernel group permissions, and daemon status |
-| `lowen --test` | Record 5 seconds of audio, transcribe via Groq, and print to stdout (no paste) |
-| `lowen --test-paste` | Test text injection by typing into your active window after a 3-second delay |
-| `lowen` | Run the Lowen daemon with floating pill and system tray companion |
+| `flinx --check` | Verify system dependencies, kernel group permissions, and daemon status |
+| `flinx --test` | Record 5 seconds of audio, transcribe via Groq, and print to stdout (no paste) |
+| `flinx --test-paste` | Test text injection by typing into your active window after a 3-second delay |
+| `flinx` | Run the Flinx daemon with floating pill and system tray companion |
 
 ### Autostart on Boot (Systemd)
-To have Lowen start automatically whenever you log into your desktop:
+To have Flinx start automatically whenever you log into your desktop:
 ```bash
-systemctl --user enable --now lowen
+systemctl --user enable --now flinx
 ```
 To check service logs:
 ```bash
-journalctl --user -u lowen -f
+journalctl --user -u flinx -f
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-Configuration is stored in `~/.config/lowen/.env`. You can edit it directly or click **⚙️ Edit Configuration** in the system tray menu:
+Configuration is stored in `~/.config/flinx/.env`. You can edit it directly or click **⚙️ Edit Configuration** in the system tray menu:
 
 ```env
 # Required: Your Groq API key (free at https://console.groq.com)
@@ -155,13 +155,13 @@ sudo usermod -aG input $USER
 ```
 
 ### "ydotoold is not running"
-Lowen injects keystrokes via `ydotool`. Ensure its user daemon is active:
+Flinx injects keystrokes via `ydotool`. Ensure its user daemon is active:
 ```bash
 systemctl --user enable --now ydotoold
 ```
 
 ### Text is copied to clipboard but not pasting
-1. Run `lowen --check` to confirm permissions.
+1. Run `flinx --check` to confirm permissions.
 2. Check that your active application supports standard Wayland clipboard paste (`Ctrl+V`).
 3. For custom key delay or focus settling, adjust `MIN_RECORDING_DURATION` in `.env`.
 
@@ -169,9 +169,9 @@ systemctl --user enable --now ydotoold
 
 ## 🗑️ Uninstallation
 
-To cleanly remove Lowen, its user services, launchers, and desktop entries:
+To cleanly remove Flinx, its user services, launchers, and desktop entries:
 ```bash
-cd ~/Lowen
+cd ~/flinx  # or your clone directory
 bash uninstall.sh
 ```
 

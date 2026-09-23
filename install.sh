@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Lowen one-command setup script
+# install.sh — Flinx one-command setup script
 # Supports Fedora, Arch Linux, Ubuntu/Debian, openSUSE on Wayland (KDE Plasma 6, GNOME, Sway, Hyprland)
 #
 # Usage:
@@ -8,9 +8,9 @@
 
 set -euo pipefail
 
-LOWEN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/lowen"
-VENV_DIR="$LOWEN_DIR/.venv"
+FLINX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config/flinx"
+VENV_DIR="$FLINX_DIR/.venv"
 
 # ─────────────────────────────────────────────
 # Colours & Formatting
@@ -21,7 +21,7 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-info()    { echo -e "${GREEN}[lowen]${NC} $*"; }
+info()    { echo -e "${GREEN}[flinx]${NC} $*"; }
 warn()    { echo -e "${YELLOW}[warn]${NC}  $*"; }
 error()   { echo -e "${RED}[error]${NC} $*" >&2; }
 section() { echo; echo -e "${BLUE}──────────────────────────────────────────${NC}"; echo -e "${BLUE}  $*${NC}"; echo -e "${BLUE}──────────────────────────────────────────${NC}"; }
@@ -136,7 +136,7 @@ info "Upgrading pip..."
 
 info "Installing dependencies..."
 "$VENV_DIR/bin/pip" install evdev-binary --quiet || true
-"$VENV_DIR/bin/pip" install -r "$LOWEN_DIR/requirements.txt" --quiet
+"$VENV_DIR/bin/pip" install -r "$FLINX_DIR/requirements.txt" --quiet
 
 info "Python dependencies installed successfully"
 
@@ -148,8 +148,12 @@ mkdir -p "$CONFIG_DIR"
 
 if [ -f "$CONFIG_DIR/.env" ]; then
     info "Config already exists at $CONFIG_DIR/.env — keeping existing config"
+elif [ -f "$HOME/.config/lowen/.env" ]; then
+    info "Migrating existing configuration from ~/.config/lowen/.env..."
+    cp "$HOME/.config/lowen/.env" "$CONFIG_DIR/.env"
+    info "Configuration migrated to $CONFIG_DIR/.env"
 else
-    cp "$LOWEN_DIR/.env.example" "$CONFIG_DIR/.env"
+    cp "$FLINX_DIR/.env.example" "$CONFIG_DIR/.env"
     
     if [ -z "$API_KEY" ]; then
         echo -e "${YELLOW}Please enter your Groq API key (leave empty to configure later):${NC}"
@@ -169,17 +173,17 @@ else
 fi
 
 # ─────────────────────────────────────────────
-# 7. Lowen launcher script
+# 7. Flinx launcher script
 # ─────────────────────────────────────────────
 section "Creating user CLI launcher"
 LAUNCHER_DIR="$HOME/.local/bin"
-LAUNCHER="$LAUNCHER_DIR/lowen"
+LAUNCHER="$LAUNCHER_DIR/flinx"
 mkdir -p "$LAUNCHER_DIR"
 
 cat > "$LAUNCHER" <<EOF
 #!/usr/bin/env bash
-export PYTHONPATH="$LOWEN_DIR:\${PYTHONPATH:-}"
-exec "$VENV_DIR/bin/python" "$LOWEN_DIR/main.py" "\$@"
+export PYTHONPATH="$FLINX_DIR:\${PYTHONPATH:-}"
+exec "$VENV_DIR/bin/python" "$FLINX_DIR/main.py" "\$@"
 EOF
 chmod +x "$LAUNCHER"
 info "Launcher executable created at $LAUNCHER"
@@ -195,35 +199,35 @@ fi
 section "Installing desktop icon and application launcher"
 ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
 mkdir -p "$ICON_DIR"
-if [ -f "$LOWEN_DIR/resources/icon.svg" ]; then
-    cp "$LOWEN_DIR/resources/icon.svg" "$ICON_DIR/lowen.svg"
-    info "Icon installed to $ICON_DIR/lowen.svg"
+if [ -f "$FLINX_DIR/resources/icon.svg" ]; then
+    cp "$FLINX_DIR/resources/icon.svg" "$ICON_DIR/flinx.svg"
+    info "Icon installed to $ICON_DIR/flinx.svg"
 fi
 
 DESKTOP_DIR="$HOME/.local/share/applications"
 mkdir -p "$DESKTOP_DIR"
-cat > "$DESKTOP_DIR/lowen.desktop" <<EOF
+cat > "$DESKTOP_DIR/flinx.desktop" <<EOF
 [Desktop Entry]
-Name=Lowen
+Name=Flinx
 GenericName=Voice-to-Text Dictation
 Comment=Wayland voice-to-text with glassmorphic pill overlay
 Exec=$LAUNCHER
-Icon=lowen
+Icon=flinx
 Terminal=false
 Type=Application
 Categories=Utility;Accessibility;AudioVideo;
-Keywords=voice;dictation;speech;whisper;groq;transcription;
+Keywords=voice;dictation;speech;whisper;groq;transcription;flinx;
 StartupNotify=false
 EOF
-info "Desktop launcher created at $DESKTOP_DIR/lowen.desktop"
+info "Desktop launcher created at $DESKTOP_DIR/flinx.desktop"
 
 # ─────────────────────────────────────────────
-# 9. Lowen systemd autostart service
+# 9. Flinx systemd autostart service
 # ─────────────────────────────────────────────
-section "Installing Lowen systemd user service"
-cat > "$SYSTEMD_USER_DIR/lowen.service" <<EOF
+section "Installing Flinx systemd user service"
+cat > "$SYSTEMD_USER_DIR/flinx.service" <<EOF
 [Unit]
-Description=Lowen voice-to-text daemon
+Description=Flinx voice-to-text daemon
 After=graphical-session.target ydotoold.service
 Wants=ydotoold.service
 
@@ -242,8 +246,8 @@ WantedBy=default.target
 EOF
 
 systemctl --user daemon-reload
-info "Lowen systemd unit installed at $SYSTEMD_USER_DIR/lowen.service"
-info "To enable autostart on login: systemctl --user enable lowen"
+info "Flinx systemd unit installed at $SYSTEMD_USER_DIR/flinx.service"
+info "To enable autostart on login: systemctl --user enable flinx"
 
 # ─────────────────────────────────────────────
 # Setup complete!
@@ -251,16 +255,16 @@ info "To enable autostart on login: systemctl --user enable lowen"
 section "Setup Complete!"
 echo
 echo "  Verify your installation and permissions:"
-echo "    lowen --check"
+echo "    flinx --check"
 echo
 echo "  Quick test (records 5s, transcribes, prints output):"
-echo "    lowen --test"
+echo "    flinx --test"
 echo
 echo "  Launch the background daemon manually:"
-echo "    lowen"
+echo "    flinx"
 echo
 echo "  Enable autostart on system boot/login:"
-echo "    systemctl --user enable --now lowen"
+echo "    systemctl --user enable --now flinx"
 echo
 if [ "$NEEDS_RELOGIN" = true ]; then
     echo -e "  ${RED}⚠  IMPORTANT: You MUST log out and log back in for 'input' group permissions to take effect!${NC}"

@@ -1,5 +1,5 @@
 """
-lowen/clipboard.py — Wayland text injection
+flinx/clipboard.py — Wayland text injection
 
 Injection strategy (tried in order):
   1. wtype  — Wayland-native text injection via zwp_text_input_v3 protocol.

@@ -1,5 +1,5 @@
 """
-lowen/core.py — App state machine and orchestrator
+flinx/core.py — App state machine and orchestrator
 
 States:
     IDLE        → waiting for hotkey
@@ -22,8 +22,8 @@ from enum import Enum, auto
 from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
-from lowen import config, transcriber, clipboard
-from lowen.recorder import Recorder
+from flinx import config, transcriber, clipboard
+from flinx.recorder import Recorder
 
 RESOURCES_DIR = Path(__file__).resolve().parent.parent / "resources"
 
@@ -36,9 +36,9 @@ class State(Enum):
     ERROR = auto()
 
 
-class LowenCore(QObject):
+class FlinxCore(QObject):
     """
-    State machine orchestrator for Lowen.
+    State machine orchestrator for Flinx.
     Runs sound recording and Groq Whisper transcription asynchronously.
     """
     state_changed = pyqtSignal(State, str)  # (State, status_message)
@@ -61,10 +61,10 @@ class LowenCore(QObject):
         stop_wav = sounds_dir / "stop.wav"
         if not (start_wav.exists() and stop_wav.exists()):
             try:
-                from lowen.generate_sounds import main as gen_main
+                from flinx.generate_sounds import main as gen_main
                 gen_main()
             except Exception as e:
-                print(f"[lowen] Warning: Failed to auto-generate sounds: {e}")
+                print(f"[flinx] Warning: Failed to auto-generate sounds: {e}")
 
     @property
     def state(self) -> State:
@@ -84,7 +84,7 @@ class LowenCore(QObject):
         """Called when hotkey is pressed down."""
         if self._state != State.IDLE:
             return
-        print("[lowen] Hotkey pressed — starting recording", flush=True)
+        print("[flinx] Hotkey pressed — starting recording", flush=True)
         self._play_sound("start")
         self._set_state(State.RECORDING, "Listening...")
         self.recorder.start()
@@ -94,12 +94,12 @@ class LowenCore(QObject):
         """Called when hotkey is released."""
         if self._state != State.RECORDING:
             return
-        print("[lowen] Hotkey released — stopping recording", flush=True)
+        print("[flinx] Hotkey released — stopping recording", flush=True)
         self._play_sound("stop")
         wav_path = self.recorder.stop()
 
         if wav_path is None:
-            print("[lowen] Recording too short — discarded", flush=True)
+            print("[flinx] Recording too short — discarded", flush=True)
             self._set_state(State.IDLE, "")
             return
 
@@ -115,15 +115,15 @@ class LowenCore(QObject):
 
     def _process(self, wav_path: str) -> None:
         """Background thread worker for transcription and clipboard paste."""
-        print("[lowen] Transcribing...", flush=True)
+        print("[flinx] Transcribing...", flush=True)
         try:
             text = transcriber.transcribe(wav_path)
         except Exception as exc:  # noqa: BLE001
-            print(f"[lowen] Transcription error: {exc}", flush=True)
+            print(f"[flinx] Transcription error: {exc}", flush=True)
             self._set_state(State.ERROR, f"Transcription failed: {exc}")
             return
 
-        print(f"[lowen] Transcribed: {text!r}", flush=True)
+        print(f"[flinx] Transcribed: {text!r}", flush=True)
         if not text:
             self._set_state(State.ERROR, "No speech detected")
             return
@@ -131,7 +131,7 @@ class LowenCore(QObject):
         # Show success state with the transcribed preview
         preview = text[:40] + "..." if len(text) > 40 else text
         self._set_state(State.PASTING, preview)
-        print(f"[lowen] Injecting via wtype...", flush=True)
+        print(f"[flinx] Injecting via clipboard...", flush=True)
         
         try:
             clipboard.paste_text(text)
@@ -181,20 +181,20 @@ class LowenCore(QObject):
         Record for `duration` seconds, transcribe, return text (no paste).
         Blocks the calling thread. Used for CLI testing.
         """
-        print(f"[lowen] Recording for {duration}s… speak now!")
+        print(f"[flinx] Recording for {duration}s… speak now!")
         self.recorder.start()
         time.sleep(duration)
         wav_path = self.recorder.stop()
 
         if wav_path is None:
-            print("[lowen] Recording too short — discarded")
+            print("[flinx] Recording too short — discarded")
             return None
 
-        print("[lowen] Transcribing…")
+        print("[flinx] Transcribing…")
         return transcriber.transcribe(wav_path)
 
-    def test_paste(self, text: str = "hello from lowen") -> None:
+    def test_paste(self, text: str = "hello from flinx") -> None:
         """Paste a hardcoded string. Used for CLI testing."""
-        print(f"[lowen] Pasting: {text!r}")
+        print(f"[flinx] Pasting: {text!r}")
         clipboard.paste_text(text)
-        print("[lowen] Done")
+        print("[flinx] Done")

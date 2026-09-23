@@ -1,5 +1,5 @@
 """
-ui/tray.py — KDE System Tray icon for Lowen
+ui/tray.py — KDE System Tray icon for Flinx
 
 Provides status monitoring, configuration editing, reload controls,
 and quit actions directly from the system tray.
@@ -9,15 +9,16 @@ from __future__ import annotations
 
 import os
 import subprocess
+from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtWidgets import QMenu, QSystemTrayIcon, QMessageBox
 
-from lowen import config
+from flinx import config
 
 
-class LowenTray(QObject):
-    """System tray component for Lowen."""
+class FlinxTray(QObject):
+    """System tray component for Flinx."""
     
     reload_requested = pyqtSignal()
     quit_requested = pyqtSignal()
@@ -41,13 +42,13 @@ class LowenTray(QObject):
             self.icon = QIcon(pixmap)
 
         self.tray_icon = QSystemTrayIcon(self.icon, parent)
-        self.tray_icon.setToolTip("Lowen Voice-to-Text")
+        self.tray_icon.setToolTip("Flinx Voice-to-Text")
 
         # Setup menu
         self.menu = QMenu()
         
         # Status item
-        self.status_action = QAction("🟢 Lowen — Running", self)
+        self.status_action = QAction("🟢 Flinx — Running", self)
         self.status_action.setEnabled(False)
         self.menu.addAction(self.status_action)
         
@@ -88,15 +89,17 @@ class LowenTray(QObject):
 
     def _open_config(self) -> None:
         """Opens the configuration file in the default text editor."""
-        config_path = os.path.expanduser("~/.config/lowen/.env")
+        config_path = os.path.expanduser("~/.config/flinx/.env")
         if not os.path.exists(config_path):
-            # Fallback to copy example if config missing
+            # Check legacy config first
+            legacy_path = os.path.expanduser("~/.config/lowen/.env")
             os.makedirs(os.path.dirname(config_path), exist_ok=True)
             import shutil
-            from pathlib import Path
             example_path = Path(__file__).resolve().parent.parent / ".env.example"
             try:
-                if example_path.exists():
+                if os.path.exists(legacy_path):
+                    shutil.copy(legacy_path, config_path)
+                elif example_path.exists():
                     shutil.copy(example_path, config_path)
             except Exception as e:
                 QMessageBox.critical(None, "Error", f"Failed to create config file: {e}")
@@ -110,16 +113,18 @@ class LowenTray(QObject):
 
     def _reload_config(self) -> None:
         """Triggers a configuration reload."""
-        import importlib
-        from lowen import config
         try:
-            importlib.reload(config)
+            config.reload()
             self.reload_requested.emit()
             self.tray_icon.showMessage(
-                "Lowen",
+                "Flinx",
                 "Configuration reloaded successfully.",
                 QSystemTrayIcon.MessageIcon.Information,
                 2000
             )
         except Exception as e:
             QMessageBox.critical(None, "Error", f"Failed to reload config: {e}")
+
+
+# Alias for backward compatibility
+LowenTray = FlinxTray

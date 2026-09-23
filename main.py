@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-main.py — Lowen entry point
+main.py — Flinx entry point
 
 Usage:
-    python main.py              # Launch full daemon (UI, tray, hotkeys)
-    python main.py --test       # Record 5s, transcribe, print (no paste)
-    python main.py --test-paste # Paste "hello from lowen" into focused window
-    python main.py --check      # Check config + system deps, then exit
+    flinx                       # Launch full daemon (UI, tray, hotkeys)
+    flinx --test                # Record 5s, transcribe, print (no paste)
+    flinx --test-paste          # Paste "hello from flinx" into focused window
+    flinx --check               # Check config + system deps, then exit
 """
 
 from __future__ import annotations
@@ -23,10 +23,10 @@ def cmd_check() -> None:
     import grp
     import os
     import pwd
-    from lowen import config
+    from flinx import config
 
     print("=" * 55)
-    print("  Lowen — Comprehensive System Check")
+    print("  Flinx — Comprehensive System Check")
     print("=" * 55)
 
     errors = config.validate()
@@ -90,15 +90,15 @@ def cmd_check() -> None:
 
 def cmd_test() -> None:
     """Record 5 seconds, transcribe, print result — no paste."""
-    from lowen import config
+    from flinx import config
     errors = config.validate()
     if errors:
         for e in errors:
             print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
-    from lowen.core import LowenCore
-    core = LowenCore()
+    from flinx.core import FlinxCore
+    core = FlinxCore()
     text = core.test_pipeline(duration=5.0)
     if text:
         print(f"\nTranscription:\n  {text}")
@@ -108,39 +108,39 @@ def cmd_test() -> None:
 
 def cmd_test_paste() -> None:
     """Paste a test string into the currently focused window."""
-    from lowen.core import LowenCore
-    core = LowenCore()
+    from flinx.core import FlinxCore
+    core = FlinxCore()
     print("Switch to a text field in the next 3 seconds…")
     import time; time.sleep(3.0)
-    core.test_paste("Hello from Lowen! Voice-to-text is working correctly.")
+    core.test_paste("Hello from Flinx! Voice-to-text is working correctly.")
 
 
 def cmd_run() -> None:
-    """Launch the full Lowen daemon with UI, system tray, and global hotkeys."""
+    """Launch the full Flinx daemon with UI, system tray, and global hotkeys."""
     from PyQt6.QtWidgets import QApplication
     from PyQt6.QtCore import QTimer
-    from lowen import config
-    from lowen.core import LowenCore, State
-    from lowen.hotkey import HotkeyListener
-    from ui.pill import LowenPill
-    from ui.tray import LowenTray
+    from flinx import config
+    from flinx.core import FlinxCore, State
+    from flinx.hotkey import HotkeyListener
+    from ui.pill import FlinxPill
+    from ui.tray import FlinxTray
 
     # Initialize PyQt application
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
     # Initialize components
-    core = LowenCore()
-    pill = LowenPill() if config.SHOW_PILL else None
+    core = FlinxCore()
+    pill = FlinxPill() if config.SHOW_PILL else None
     hotkey = HotkeyListener()
-    tray = LowenTray()
+    tray = FlinxTray()
 
     # Connect hotkey signals to state machine
     hotkey.hotkey_pressed.connect(core.start_recording)
     hotkey.hotkey_released.connect(core.stop_recording)
     
     def handle_hotkey_error(err_msg: str) -> None:
-        print(f"[lowen] Hotkey Error: {err_msg}", file=sys.stderr)
+        print(f"[flinx] Hotkey Error: {err_msg}", file=sys.stderr)
         if pill:
             pill.transition_to(State.ERROR, err_msg)
 
@@ -163,9 +163,9 @@ def cmd_run() -> None:
         elif state == State.ERROR:
             tray.status_action.setText(f"⚠️ Error: {message[:25]}..." if len(message) > 25 else f"⚠️ {message}")
             from PyQt6.QtWidgets import QSystemTrayIcon
-            tray.tray_icon.showMessage("Lowen", message, QSystemTrayIcon.MessageIcon.Warning, 3000)
+            tray.tray_icon.showMessage("Flinx", message, QSystemTrayIcon.MessageIcon.Warning, 3000)
         elif state == State.IDLE:
-            tray.status_action.setText("🟢 Lowen — Running")
+            tray.status_action.setText("🟢 Flinx — Running")
 
     core.state_changed.connect(handle_state_change)
 
@@ -173,7 +173,7 @@ def cmd_run() -> None:
     def on_reload() -> None:
         config.reload()
         hotkey.update_hotkey(config.HOTKEY)
-        print(f"[lowen] Config reloaded: Hotkey={config.HOTKEY}, Sound={config.SOUND_FEEDBACK}, LLM={config.LLM_CLEAN}")
+        print(f"[flinx] Config reloaded: Hotkey={config.HOTKEY}, Sound={config.SOUND_FEEDBACK}, LLM={config.LLM_CLEAN}")
 
     tray.reload_requested.connect(on_reload)
     tray.quit_requested.connect(app.quit)
@@ -187,7 +187,7 @@ def cmd_run() -> None:
     # Start hotkey thread
     hotkey.start()
     
-    print(f"[lowen] Daemon active in system tray. Hold '{config.HOTKEY}' to record.")
+    print(f"[flinx] Daemon active in system tray. Hold '{config.HOTKEY}' to record.")
     
     try:
         sys.exit(app.exec())
@@ -198,8 +198,8 @@ def cmd_run() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="lowen",
-        description="Lowen — voice-to-text pill for KDE Plasma 6 / Wayland",
+        prog="flinx",
+        description="Flinx — voice-to-text dictation pill for Wayland and Linux",
     )
     parser.add_argument(
         "--test",

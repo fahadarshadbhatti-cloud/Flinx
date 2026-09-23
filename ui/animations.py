@@ -1,5 +1,5 @@
 """
-ui/animations.py — QPropertyAnimation helpers for the Lowen pill
+ui/animations.py — QPropertyAnimation helpers for the Flinx pill
 
 Provides reusable animation builders so pill.py stays clean.
 """

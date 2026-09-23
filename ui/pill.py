@@ -15,8 +15,8 @@ from PyQt6.QtCore import Qt, QTimer, QRect, QPoint, pyqtSignal, QPropertyAnimati
 from PyQt6.QtGui import QPainter, QColor, QBrush, QPen, QFont, QPainterPath
 from PyQt6.QtWidgets import QWidget, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QGraphicsDropShadowEffect
 
-from lowen import config
-from lowen.core import State
+from flinx import config
+from flinx.core import State
 from ui import animations
 
 
@@ -91,8 +91,8 @@ class WaveformWidget(QWidget):
             bar.set_color(color)
 
 
-class LowenPill(QWidget):
-    """The floating voice-to-text pill widget."""
+class FlinxPill(QWidget):
+    """The floating voice-to-text pill widget for Flinx."""
     
     def __init__(self) -> None:
         super().__init__()
@@ -280,10 +280,14 @@ class LowenPill(QWidget):
         painter.drawPath(path)
 
 
+# Alias for backward compatibility
+LowenPill = FlinxPill
+
+
 if __name__ == "__main__":
     # Test script to preview the UI design directly
     app = QApplication(sys.argv)
-    pill = LowenPill()
+    pill = FlinxPill()
     
     # State switching rotation for validation
     states = [

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-lowen/generate_sounds.py — Audio click generator for Lowen
+flinx/generate_sounds.py — Audio click generator for Flinx
 
 Generates extremely clean, soft, decaying sine-wave clicks for start and stop
 events, preventing dependancy on external OS sounds and matching Vowen's premium UX.

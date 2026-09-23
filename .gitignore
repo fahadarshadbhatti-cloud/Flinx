@@ -21,6 +21,8 @@ env/
 # Audio temporary files
 *.wav
 *.oga
+/tmp/flinx*
+/tmp/lowen*
 
 # IDEs & System files
 .vscode/
