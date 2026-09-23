@@ -43,6 +43,7 @@ class FlinxCore(QObject):
     """
     state_changed = pyqtSignal(State, str)  # (State, status_message)
     rms_level_updated = pyqtSignal(float)   # RMS level [0.0, 1.0]
+    transcription_completed = pyqtSignal(str)  # Full transcribed text for tray/history
 
     def __init__(self) -> None:
         super().__init__()
@@ -170,9 +171,10 @@ class FlinxCore(QObject):
                 time.sleep(1.4)
                 return
 
-            # Show success state with the transcribed preview
-            preview = text[:40] + "..." if len(text) > 40 else text
-            self._set_state(State.PASTING, preview)
+            self.transcription_completed.emit(text)
+
+            # Show pasting status in pill HUD
+            self._set_state(State.PASTING, "Pasting...")
             print("[flinx] Injecting via clipboard...", flush=True)
 
             try:
@@ -183,8 +185,8 @@ class FlinxCore(QObject):
                 time.sleep(2.0)
                 return
 
-            # Let the UI show success state for a moment before returning to IDLE
-            time.sleep(1.2)
+            self._set_state(State.PASTING, "Pasted!")
+            time.sleep(0.9)
 
         finally:
             # Clean up temporary audio file

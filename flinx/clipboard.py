@@ -96,15 +96,17 @@ def paste_text(text: str) -> None:
         check=True,
     )
 
-    # 400ms — gives the OS time to settle after Right Alt key release and
-    # re-establish focus on the target window before we fire Ctrl+V.
-    time.sleep(0.4)
+    # Settle delay gives the OS compositor and target window time to ensure
+    # clipboard buffer is populated and any prior key release events (Shift/Alt)
+    # have fully settled before firing Ctrl+V.
+    time.sleep(0.25)
 
-    # Simulate Ctrl+V via raw keycodes:
+    # Simulate Ctrl+V via raw keycodes with a 20ms key event delay:
     # 29 = KEY_LEFTCTRL, 47 = KEY_V.  1 = key down, 0 = key up.
+    # The -d 20 flag prevents keypress event drops on Wayland applications.
     try:
         subprocess.run(
-            ["ydotool", "key", "29:1", "47:1", "47:0", "29:0"],
+            ["ydotool", "key", "-d", "20", "29:1", "47:1", "47:0", "29:0"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             check=True,

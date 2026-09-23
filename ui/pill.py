@@ -371,8 +371,7 @@ class PillCapsule(QWidget):
             self.timer_label.hide()
             self.status_glyph.set_mode("check")
             self.status_glyph.show()
-            preview = message if len(message) <= 32 else message[:30] + "..."
-            self.text_label.setText(preview or "Pasting...")
+            self.text_label.setText(message or "Pasting...")
             self.text_label.setStyleSheet(
                 "color: #34D399; "
                 "font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif; "
@@ -509,7 +508,13 @@ class FlinxPill(QWidget):
         self.hide_timer.timeout.connect(self.hide_pill)
 
         self.current_state = State.IDLE
-        self.hide()
+        self.capsule.hide()
+
+        # Pre-map the 100% transparent click-through overlay at startup.
+        # Keeping this surface permanently mapped ensures Wayland compositors
+        # (KWin, GNOME, Sway, Hyprland) never emit surface map/unmap events that
+        # de-focus the user's active editor or text cursor when dictating.
+        self.show()
 
     def update_geometry(self) -> None:
         screen = QApplication.primaryScreen()
@@ -525,32 +530,30 @@ class FlinxPill(QWidget):
             self.hide_pill()
 
         elif state == State.RECORDING:
-            self.capsule.set_state(State.RECORDING, message)
+            self.capsule.set_state(State.RECORDING, message or "Listening...")
             self.show_pill()
 
         elif state == State.PROCESSING:
-            self.capsule.set_state(State.PROCESSING, message)
+            self.capsule.set_state(State.PROCESSING, message or "Transcribing...")
             self.show_pill()
 
         elif state == State.PASTING:
-            self.capsule.set_state(State.PASTING, message)
+            self.capsule.set_state(State.PASTING, message or "Pasting...")
             self.show_pill()
             self.hide_timer.start(1400)
 
         elif state == State.ERROR:
-            self.capsule.set_state(State.ERROR, message)
+            self.capsule.set_state(State.ERROR, message or "Error")
             self.show_pill()
             self._shake_anim = animations.shake(self.capsule)
             self._shake_anim.start()
             self.hide_timer.start(2500)
 
     def show_pill(self) -> None:
-        self.update_geometry()
-        self.show()
         self.capsule.show()
 
     def hide_pill(self) -> None:
-        self.hide()
+        self.capsule.hide()
 
 
 # Backward compatibility alias

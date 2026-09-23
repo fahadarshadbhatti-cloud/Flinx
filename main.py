@@ -169,10 +169,13 @@ def cmd_run(show_settings_on_start: bool = False) -> None:
         core.state_changed.connect(pill.transition_to)
         core.rms_level_updated.connect(pill.waveform.update_level)
 
-    # Update tray menu with last transcription when copy succeeds
+    # Connect transcription completed to tray history
+    core.transcription_completed.connect(tray.set_last_transcription)
+
+    # Update tray menu with status indicator
     def handle_state_change(state: State, message: str) -> None:
         if state == State.PASTING:
-            tray.set_last_transcription(message)
+            tray.status_action.setText("🟢 Pasting...")
         elif state == State.RECORDING:
             tray.status_action.setText("🔴 Recording...")
         elif state == State.PROCESSING:
