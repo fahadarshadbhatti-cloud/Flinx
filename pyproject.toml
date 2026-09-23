@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lowen"
+version = "0.2.0"
+description = "A fast, glassmorphic push-to-talk voice-to-text dictation pill for Wayland and Linux"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Fahad Arshad" }
+]
+keywords = ["wayland", "whisper", "groq", "dictation", "voice-to-text", "speech-recognition", "kde-plasma", "linux"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Adaptive Technologies",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "groq>=0.9.0",
+    "sounddevice>=0.4.6",
+    "numpy>=1.26.0",
+    "scipy>=1.11.0",
+    "PyQt6>=6.6.0",
+    "evdev-binary>=1.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/fahadarshad/lowen"
+Repository = "https://github.com/fahadarshad/lowen"
+
+[project.scripts]
+lowen = "main:main"
+
+[tool.setuptools.packages.find]
+include = ["lowen*", "ui*"]

@@ -1,0 +1,36 @@
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Configuration and secrets (CRITICAL: NEVER COMMIT API KEYS)
+.env
+.env.local
+*.key
+
+# Audio temporary files
+*.wav
+*.oga
+
+# IDEs & System files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing & Linting
+.pytest_cache/
+.ruff_cache/
+.coverage
