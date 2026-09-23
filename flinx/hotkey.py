@@ -11,6 +11,7 @@ from __future__ import annotations
 import selectors
 import sys
 import threading
+import time
 from PyQt6.QtCore import QThread, pyqtSignal
 import evdev
 from evdev import ecodes
@@ -37,6 +38,7 @@ class HotkeyListener(QThread):
         self._hotkey_codes: set[int] = set()
         self._pressed: set[int] = set()   # Which hotkey codes are currently held
         self._hotkey_active = False        # Whether we've fired hotkey_pressed
+        self._last_trigger_time = 0.0
         self.update_hotkey(config.HOTKEY)
 
     def update_hotkey(self, hotkey_str: str | None = None) -> None:
@@ -109,13 +111,17 @@ class HotkeyListener(QThread):
                             self._pressed.add(event.code)
                             # Fire when ALL combo keys are held for the first time
                             if self._pressed >= self._hotkey_codes and not self._hotkey_active:
-                                self._hotkey_active = True
-                                self.hotkey_pressed.emit()
+                                now = time.monotonic()
+                                if now - self._last_trigger_time >= 0.08:
+                                    self._last_trigger_time = now
+                                    self._hotkey_active = True
+                                    self.hotkey_pressed.emit()
 
                         elif event.value == 0:  # key up
                             self._pressed.discard(event.code)
                             if self._hotkey_active:
                                 self._hotkey_active = False
+                                self._last_trigger_time = time.monotonic()
                                 self.hotkey_released.emit()
                 except Exception as e:
                     # Handle device disconnected

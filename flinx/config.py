@@ -112,6 +112,12 @@ def reload() -> None:
     SHOW_PILL = os.getenv("SHOW_PILL", "true").lower() in ("true", "1", "yes")
     MIN_RECORDING_DURATION = float(os.getenv("MIN_RECORDING_DURATION", "0.3"))
 
+    try:
+        from flinx import transcriber
+        transcriber.reset_client()
+    except Exception:
+        pass
+
 
 def save_config(updates: dict[str, str | bool | float | int]) -> Path:
     """

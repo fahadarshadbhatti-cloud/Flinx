@@ -76,9 +76,15 @@ LLM_SYSTEM_PROMPT = (
 )
 
 
+def reset_client() -> None:
+    """Reset the cached Groq client (called when configuration changes)."""
+    global _client
+    _client = None
+
+
 def _get_client() -> Groq:
     global _client
-    if _client is None:
+    if _client is None or getattr(_client, "api_key", None) != config.GROQ_API_KEY:
         _client = Groq(api_key=config.GROQ_API_KEY)
     return _client
 

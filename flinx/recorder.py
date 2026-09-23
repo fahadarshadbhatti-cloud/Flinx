@@ -57,19 +57,28 @@ class Recorder:
 
             self._frames = []
             self._start_time = time.monotonic()
-            self._recording = True
-
             device = None if config.MIC_DEVICE == "default" else config.MIC_DEVICE
 
-            self._stream = sd.InputStream(
-                samplerate=config.SAMPLE_RATE,
-                channels=config.CHANNELS,
-                dtype="int16",
-                device=device,
-                blocksize=1024,
-                callback=self._audio_callback,
-            )
-            self._stream.start()
+            try:
+                self._stream = sd.InputStream(
+                    samplerate=config.SAMPLE_RATE,
+                    channels=config.CHANNELS,
+                    dtype="int16",
+                    device=device,
+                    blocksize=1024,
+                    callback=self._audio_callback,
+                )
+                self._stream.start()
+                self._recording = True
+            except Exception as e:
+                self._recording = False
+                if self._stream is not None:
+                    try:
+                        self._stream.close()
+                    except Exception:
+                        pass
+                    self._stream = None
+                raise RuntimeError(f"Microphone initialization failed: {e}") from e
 
     def stop(self) -> str | None:
         """
@@ -84,12 +93,16 @@ class Recorder:
                 return None
 
             self._recording = False
-            duration = time.monotonic() - self._start_time  # type: ignore[operator]
+            duration = (time.monotonic() - self._start_time) if self._start_time else 0.0
 
             if self._stream:
-                self._stream.stop()
-                self._stream.close()
-                self._stream = None
+                try:
+                    self._stream.stop()
+                    self._stream.close()
+                except Exception as e:
+                    print(f"[flinx] Warning closing audio stream: {e}", flush=True)
+                finally:
+                    self._stream = None
 
             if duration < config.MIN_RECORDING_DURATION:
                 self._frames = []
@@ -98,19 +111,29 @@ class Recorder:
             if not self._frames:
                 return None
 
-            audio = np.concatenate(self._frames, axis=0)
-            wav_path = config.TEMP_AUDIO_PATH
-            wavfile.write(wav_path, config.SAMPLE_RATE, audio)
-            return wav_path
+            try:
+                audio = np.concatenate(self._frames, axis=0)
+                wav_path = config.TEMP_AUDIO_PATH
+                wavfile.write(wav_path, config.SAMPLE_RATE, audio)
+                return wav_path
+            except Exception as e:
+                print(f"[flinx] Error saving audio to WAV: {e}", flush=True)
+                return None
+            finally:
+                self._frames = []
 
     def cancel(self) -> None:
         """Abort recording without saving."""
         with self._lock:
             self._recording = False
             if self._stream:
-                self._stream.stop()
-                self._stream.close()
-                self._stream = None
+                try:
+                    self._stream.stop()
+                    self._stream.close()
+                except Exception:
+                    pass
+                finally:
+                    self._stream = None
             self._frames = []
 
     @property

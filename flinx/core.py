@@ -79,27 +79,59 @@ class FlinxCore(QObject):
         if self._state == State.RECORDING:
             self.rms_level_updated.emit(level)
 
+    def _auto_recover_idle(self, delay: float = 2.0) -> None:
+        """Helper to ensure state machine returns to IDLE after delay."""
+        time.sleep(delay)
+        with self._lock:
+            if self._state != State.RECORDING:
+                self._state = State.IDLE
+                self.state_changed.emit(State.IDLE, "")
+
     @pyqtSlot()
     def start_recording(self) -> None:
         """Called when hotkey is pressed down."""
-        if self._state != State.IDLE:
-            return
+        with self._lock:
+            # If already actively recording, ignore duplicate triggers
+            if self._state == State.RECORDING:
+                return
+
+            # If previous recording is still transcribing, avoid overlapping capture
+            if self._state == State.PROCESSING:
+                print("[flinx] Hotkey pressed while previous recording is processing — ignoring", flush=True)
+                return
+
+            # Self-healing: if state was ERROR or PASTING or IDLE, transition directly to RECORDING!
+            self._state = State.RECORDING
+
         print("[flinx] Hotkey pressed — starting recording", flush=True)
         self._play_sound("start")
-        self._set_state(State.RECORDING, "Listening...")
-        self.recorder.start()
+        self.state_changed.emit(State.RECORDING, "Listening...")
+
+        try:
+            self.recorder.start()
+        except Exception as e:
+            print(f"[flinx] Error starting audio recorder: {e}", flush=True)
+            self._set_state(State.ERROR, f"Mic error: {e}")
+            threading.Thread(target=self._auto_recover_idle, args=(2.0,), daemon=True).start()
 
     @pyqtSlot()
     def stop_recording(self) -> None:
         """Called when hotkey is released."""
-        if self._state != State.RECORDING:
-            return
+        with self._lock:
+            if self._state != State.RECORDING:
+                return
+
         print("[flinx] Hotkey released — stopping recording", flush=True)
         self._play_sound("stop")
-        wav_path = self.recorder.stop()
+
+        try:
+            wav_path = self.recorder.stop()
+        except Exception as e:
+            print(f"[flinx] Error stopping audio recorder: {e}", flush=True)
+            wav_path = None
 
         if wav_path is None:
-            print("[flinx] Recording too short — discarded", flush=True)
+            print("[flinx] Recording too short or empty — discarded", flush=True)
             self._set_state(State.IDLE, "")
             return
 
@@ -109,39 +141,64 @@ class FlinxCore(QObject):
 
     def cancel_recording(self) -> None:
         """Abort recording without saving or transcribing."""
-        if self._state == State.RECORDING:
-            self.recorder.cancel()
-            self._set_state(State.IDLE, "")
+        with self._lock:
+            was_recording = (self._state == State.RECORDING)
+            self._state = State.IDLE
+
+        if was_recording:
+            try:
+                self.recorder.cancel()
+            except Exception:
+                pass
+            self.state_changed.emit(State.IDLE, "")
 
     def _process(self, wav_path: str) -> None:
-        """Background thread worker for transcription and clipboard paste."""
+        """Background thread worker for transcription and clipboard paste with guaranteed recovery."""
         print("[flinx] Transcribing...", flush=True)
         try:
-            text = transcriber.transcribe(wav_path)
-        except Exception as exc:  # noqa: BLE001
-            print(f"[flinx] Transcription error: {exc}", flush=True)
-            self._set_state(State.ERROR, f"Transcription failed: {exc}")
-            return
+            try:
+                text = transcriber.transcribe(wav_path)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[flinx] Transcription error: {exc}", flush=True)
+                self._set_state(State.ERROR, f"Transcription failed: {exc}")
+                time.sleep(2.0)
+                return
 
-        print(f"[flinx] Transcribed: {text!r}", flush=True)
-        if not text:
-            self._set_state(State.ERROR, "No speech detected")
-            return
+            print(f"[flinx] Transcribed: {text!r}", flush=True)
+            if not text or not text.strip():
+                self._set_state(State.ERROR, "No speech detected")
+                time.sleep(1.4)
+                return
 
-        # Show success state with the transcribed preview
-        preview = text[:40] + "..." if len(text) > 40 else text
-        self._set_state(State.PASTING, preview)
-        print(f"[flinx] Injecting via clipboard...", flush=True)
-        
-        try:
-            clipboard.paste_text(text)
-        except Exception as exc:  # noqa: BLE001
-            self._set_state(State.ERROR, f"Failed to paste: {exc}")
-            return
+            # Show success state with the transcribed preview
+            preview = text[:40] + "..." if len(text) > 40 else text
+            self._set_state(State.PASTING, preview)
+            print("[flinx] Injecting via clipboard...", flush=True)
 
-        # Let the UI show success state for a moment before returning to IDLE
-        time.sleep(1.5)
-        self._set_state(State.IDLE, "")
+            try:
+                clipboard.paste_text(text)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[flinx] Paste error: {exc}", flush=True)
+                self._set_state(State.ERROR, f"Failed to paste: {exc}")
+                time.sleep(2.0)
+                return
+
+            # Let the UI show success state for a moment before returning to IDLE
+            time.sleep(1.2)
+
+        finally:
+            # Clean up temporary audio file
+            try:
+                if wav_path and os.path.exists(wav_path):
+                    os.remove(wav_path)
+            except Exception:
+                pass
+
+            # Guaranteed self-healing reset: always return to IDLE if not actively recording
+            with self._lock:
+                if self._state != State.RECORDING:
+                    self._state = State.IDLE
+                    self.state_changed.emit(State.IDLE, "")
 
     def _play_sound(self, action: str) -> None:
         """Plays start/stop feedback click sound."""
