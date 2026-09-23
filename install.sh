@@ -210,7 +210,7 @@ cat > "$DESKTOP_DIR/flinx.desktop" <<EOF
 [Desktop Entry]
 Name=Flinx
 GenericName=Voice-to-Text Dictation
-Comment=Wayland voice-to-text with glassmorphic pill overlay
+Comment=Wayland voice-to-text dictation with glassmorphic pill overlay
 Exec=$LAUNCHER
 Icon=flinx
 Terminal=false
@@ -218,8 +218,22 @@ Type=Application
 Categories=Utility;Accessibility;AudioVideo;
 Keywords=voice;dictation;speech;whisper;groq;transcription;flinx;
 StartupNotify=false
+Actions=Settings;
+
+[Desktop Action Settings]
+Name=Open Control Center
+Exec=$LAUNCHER --settings
+Icon=flinx
 EOF
 info "Desktop launcher created at $DESKTOP_DIR/flinx.desktop"
+
+# Refresh desktop caches
+if command -v update-desktop-database &>/dev/null; then
+    update-desktop-database "$DESKTOP_DIR" &>/dev/null || true
+fi
+if command -v gtk-update-icon-cache &>/dev/null; then
+    gtk-update-icon-cache "$HOME/.local/share/icons/hicolor" &>/dev/null || true
+fi
 
 # ─────────────────────────────────────────────
 # 9. Flinx systemd autostart service

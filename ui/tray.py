@@ -1,8 +1,8 @@
 """
 ui/tray.py — KDE System Tray icon for Flinx
 
-Provides status monitoring, configuration editing, reload controls,
-and quit actions directly from the system tray.
+Provides status monitoring, Control Center launcher, configuration editing,
+reload controls, and quit actions directly from the system tray.
 """
 
 from __future__ import annotations
@@ -19,13 +19,14 @@ from flinx import config
 
 class FlinxTray(QObject):
     """System tray component for Flinx."""
-    
+
+    open_control_center_requested = pyqtSignal()
     reload_requested = pyqtSignal()
     quit_requested = pyqtSignal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        
+
         # Load icon from standard KDE/Freedesktop theme fallback to generic audio-input-microphone
         self.icon = QIcon.fromTheme("audio-input-microphone")
         if self.icon.isNull():
@@ -46,44 +47,54 @@ class FlinxTray(QObject):
 
         # Setup menu
         self.menu = QMenu()
-        
+
         # Status item
         self.status_action = QAction("🟢 Flinx — Running", self)
         self.status_action.setEnabled(False)
         self.menu.addAction(self.status_action)
-        
+
         # Last transcription preview
         self.last_trans_action = QAction("📋 No transcription yet", self)
         self.last_trans_action.setEnabled(False)
         self.menu.addAction(self.last_trans_action)
-        
+
         self.menu.addSeparator()
-        
+
+        # Primary action: Open Control Center
+        control_center_action = QAction("⚙️ Open Control Center", self)
+        control_center_action.triggered.connect(self.open_control_center_requested.emit)
+        self.menu.addAction(control_center_action)
+
         # Configuration actions
-        open_config_action = QAction("⚙️ Edit Configuration", self)
+        open_config_action = QAction("📝 Edit Config File (.env)", self)
         open_config_action.triggered.connect(self._open_config)
         self.menu.addAction(open_config_action)
-        
+
         reload_config_action = QAction("🔄 Reload Configuration", self)
         reload_config_action.triggered.connect(self._reload_config)
         self.menu.addAction(reload_config_action)
-        
+
         self.menu.addSeparator()
-        
+
         # Quit
-        quit_action = QAction("❌ Quit", self)
+        quit_action = QAction("❌ Quit Flinx", self)
         quit_action.triggered.connect(self.quit_requested.emit)
         self.menu.addAction(quit_action)
 
         self.tray_icon.setContextMenu(self.menu)
+        self.tray_icon.activated.connect(self._on_tray_activated)
         self.tray_icon.show()
+
+    def _on_tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason in (QSystemTrayIcon.ActivationReason.Trigger, QSystemTrayIcon.ActivationReason.DoubleClick):
+            self.open_control_center_requested.emit()
 
     def set_last_transcription(self, text: str) -> None:
         """Updates the menu with a preview of the last transcription."""
         if not text:
             self.last_trans_action.setText("📋 No transcription yet")
             return
-        
+
         preview = text[:35] + "..." if len(text) > 35 else text
         self.last_trans_action.setText(f"📋 Last: {preview}")
 
@@ -91,7 +102,6 @@ class FlinxTray(QObject):
         """Opens the configuration file in the default text editor."""
         config_path = os.path.expanduser("~/.config/flinx/.env")
         if not os.path.exists(config_path):
-            # Check legacy config first
             legacy_path = os.path.expanduser("~/.config/lowen/.env")
             os.makedirs(os.path.dirname(config_path), exist_ok=True)
             import shutil
@@ -105,7 +115,6 @@ class FlinxTray(QObject):
                 QMessageBox.critical(None, "Error", f"Failed to create config file: {e}")
                 return
 
-        # Open file with default desktop handler (xdg-open)
         try:
             subprocess.Popen(["xdg-open", config_path])
         except Exception as e:
@@ -120,7 +129,7 @@ class FlinxTray(QObject):
                 "Flinx",
                 "Configuration reloaded successfully.",
                 QSystemTrayIcon.MessageIcon.Information,
-                2000
+                2000,
             )
         except Exception as e:
             QMessageBox.critical(None, "Error", f"Failed to reload config: {e}")

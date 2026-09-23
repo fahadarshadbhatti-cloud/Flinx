@@ -50,10 +50,12 @@ flowchart LR
 
 - 🎙️ **Push-to-Talk Dictation:** Hold your trigger keys, speak naturally, and release. Your transcription is instantly typed into whatever window you were working in.
 - ⚡ **Dual-Shift Preset:** Natural ergonomics. Press both `Left Shift + Right Shift` together to record—no awkward modifier gymnastics.
-- 🌊 **Real-Time Waveform:** Glassmorphic floating pill with a dynamic 5-bar visualizer that bounces in real-time with your voice amplitude.
+- 🎛️ **Obsidian Control Center GUI:** macOS/Linear-inspired dark settings dashboard (`flinx --settings`) with live mic testing, Groq API key latency validator, and 1-click Polkit permission assistance.
+- 🌊 **Real-Time Liquid Waveform:** Glassmorphic floating pill with a dynamic gradient visualizer (`#F43F5E` coral to `#8B5CF6` violet) that bounces smoothly with your voice amplitude.
 - 🧠 **Optional AI Post-Processing:** Built-in integration with `llama-3.1-8b-instant` to automatically strip verbal fillers (*"um", "uh", "like"*) and perfect punctuation before pasting.
-- 🖥️ **System Tray Companion:** Monitor daemon health, inspect last transcribed text, edit configuration, and live-reload keybindings on the fly without restarting.
+- 🖥️ **System Tray Companion:** Monitor daemon health, inspect last transcribed text, launch Control Center, edit configuration, and live-reload keybindings on the fly without restarting.
 - 🔊 **Synthesized Acoustic Clicks:** Auto-generated decaying sine waves provide subtle audio feedback on record start and stop—no external audio files required.
+- 📦 **Standalone Packaging:** Single portable binary or AppImage build script (`scripts/build_standalone.sh`) with zero external Python configuration required.
 - 🐧 **Multi-Distro Installer:** Out-of-the-box support for **Fedora**, **Arch Linux**, **Debian/Ubuntu**, and **openSUSE**.
 
 ---
@@ -78,9 +80,13 @@ bash install.sh
 ```
 *You can pass your Groq API key directly: `bash install.sh --api-key gsk_xxxx`.*
 
+> [!TIP]
+> **First-Run Onboarding:**
+> If you launch `flinx` without an API key, the **Obsidian Control Center** automatically opens on your screen with a link to get a free Groq key and an instant latency ping validator!
+
 > [!IMPORTANT]
 > **Wayland Input Permissions:**
-> To allow reading global keyboard events without `sudo`, your user is added to the `input` group. **You must log out and log back in** after running `install.sh` for this permission to take effect.
+> To allow reading global keyboard events without `sudo`, your user is added to the `input` group. If you encounter permission warnings, click the **"Fix Input Permissions"** button in the Control Center (System Check tab) to authorize via Polkit without opening a terminal!
 
 ---
 
@@ -90,6 +96,7 @@ Once installed, Flinx is accessible via the `flinx` command anywhere in your ter
 
 | Command | Action |
 |---|---|
+| `flinx --settings` / `flinx --gui` | Open the Obsidian Control Center settings GUI |
 | `flinx --check` | Verify system dependencies, kernel group permissions, and daemon status |
 | `flinx --test` | Record 5 seconds of audio, transcribe via Groq, and print to stdout (no paste) |
 | `flinx --test-paste` | Test text injection by typing into your active window after a 3-second delay |
@@ -104,6 +111,16 @@ To check service logs:
 ```bash
 journalctl --user -u flinx -f
 ```
+
+---
+
+## 📦 Standalone Binary & AppImage Build
+
+To package Flinx into a standalone, portable binary bundle that includes Python, PyQt6, PortAudio, and all dependencies:
+```bash
+bash scripts/build_standalone.sh
+```
+The compiled executable will be located in `dist/flinx/flinx`.
 
 ---
 

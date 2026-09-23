@@ -113,6 +113,52 @@ def reload() -> None:
     MIN_RECORDING_DURATION = float(os.getenv("MIN_RECORDING_DURATION", "0.3"))
 
 
+def save_config(updates: dict[str, str | bool | float | int]) -> Path:
+    """
+    Save dictionary of settings to ~/.config/flinx/.env and reload in-memory globals.
+    """
+    _FLINX_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Read existing content if file exists
+    lines = []
+    if _FLINX_CONFIG.exists():
+        with open(_FLINX_CONFIG, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    elif (_REPO_ROOT / ".env.example").exists():
+        with open(_REPO_ROOT / ".env.example", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+    # Process updates
+    keys_written = set()
+    new_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            k, _ = stripped.split("=", 1)
+            k = k.strip()
+            if k in updates:
+                val = updates[k]
+                if isinstance(val, bool):
+                    val = "true" if val else "false"
+                new_lines.append(f"{k}={val}\n")
+                keys_written.add(k)
+                continue
+        new_lines.append(line)
+
+    # Append any keys that weren't already in file
+    for k, val in updates.items():
+        if k not in keys_written:
+            if isinstance(val, bool):
+                val = "true" if val else "false"
+            new_lines.append(f"{k}={val}\n")
+
+    with open(_FLINX_CONFIG, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
+
+    reload()
+    return _FLINX_CONFIG
+
+
 def validate() -> list[str]:
     """Return a list of validation error strings (empty = all good)."""
     errors = []
