@@ -483,6 +483,7 @@ class FlinxPill(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_X11DoNotAcceptFocus, True)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
 
         # Position to primary monitor available geometry
@@ -508,13 +509,7 @@ class FlinxPill(QWidget):
         self.hide_timer.timeout.connect(self.hide_pill)
 
         self.current_state = State.IDLE
-        self.capsule.hide()
-
-        # Pre-map the 100% transparent click-through overlay at startup.
-        # Keeping this surface permanently mapped ensures Wayland compositors
-        # (KWin, GNOME, Sway, Hyprland) never emit surface map/unmap events that
-        # de-focus the user's active editor or text cursor when dictating.
-        self.show()
+        self.hide()
 
     def update_geometry(self) -> None:
         screen = QApplication.primaryScreen()
@@ -550,10 +545,13 @@ class FlinxPill(QWidget):
             self.hide_timer.start(2500)
 
     def show_pill(self) -> None:
+        self.update_geometry()
+        self.show()
+        self.raise_()
         self.capsule.show()
 
     def hide_pill(self) -> None:
-        self.capsule.hide()
+        self.hide()
 
 
 # Backward compatibility alias
